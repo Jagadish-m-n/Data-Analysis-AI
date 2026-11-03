@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Analysis AI</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232563eb'/><path d='M10 22v-6M16 22V10M22 22v-9' stroke='white' stroke-width='3' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Syntax colors for the file viewer: one sheet per theme, switched in app.js -->
+  <link id="hljs-light" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+  <link id="hljs-dark" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" disabled>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script>
+    // Set the theme before the page paints, so dark mode doesn't flash white
+    document.documentElement.dataset.bsTheme =
+      localStorage.getItem("daa.theme") ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  </script>
+</head>
+<body>
+  <!-- ============================== Top bar ============================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><i class="bi bi-bar-chart-line-fill"></i></span>
+      <span class="brand-text d-none d-sm-flex">
+        <span class="brand-name">Data Analysis AI</span>
+        <span class="brand-tagline">AI-powered analysis in an isolated sandbox</span>
+      </span>
+    </div>
+    <span id="sandbox-label" class="sandbox-chip"></span>
+    <span class="ms-auto"></span>
+    <span id="model-label" class="model-chip"></span>
+    <span id="status-badge" class="status-pill">Checking…</span>
+    <span class="divider d-none d-sm-block" aria-hidden="true"></span>
+    <button id="new-thread" class="btn btn-soft btn-sm text-nowrap" type="button" title="End this conversation and delete its sandbox">
+      <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> New conversation</span>
+    </button>
+    <button id="theme-toggle" class="btn btn-soft btn-icon btn-sm" type="button" aria-label="Toggle dark mode">
+      <i class="bi bi-moon-stars"></i>
+    </button>
+  </header>
+
+  <main class="ide">
+    <!-- ============================== Files ============================== -->
+    <aside class="panel files-panel" aria-label="Sandbox files">
+      <div class="panel-header">
+        <span class="panel-title"><i class="bi bi-folder2-open"></i> Explorer</span>
+        <button id="refresh-tree" class="btn btn-ghost btn-icon btn-sm" type="button" title="Refresh" aria-label="Refresh the file tree" disabled>
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+      <div id="changes" class="changes"></div>
+      <div id="tree" class="panel-body tree"></div>
+    </aside>
+
+    <!-- ============================== Viewer ============================== -->
+    <section class="panel viewer-panel" aria-label="File viewer">
+      <div class="panel-header">
+        <span id="viewer-title" class="viewer-title text-truncate">No file selected</span>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <div id="viewer-modes" class="segmented" role="group" aria-label="View"></div>
+          <button id="viewer-download" class="btn btn-ghost btn-icon btn-sm" type="button" title="Download" aria-label="Download this file" hidden>
+            <i class="bi bi-download"></i>
+          </button>
+        </div>
+      </div>
+      <div id="viewer" class="panel-body viewer"></div>
+    </section>
+
+    <!-- ============================== Chat ============================== -->
+    <section class="panel chat-panel" aria-label="Chat">
+      <div class="panel-header">
+        <span class="panel-title"><i class="bi bi-chat-square-text"></i> Assistant</span>
+        <span id="chat-status" class="chat-status"></span>
+      </div>
+      <div id="messages" class="panel-body messages" aria-live="polite"></div>
+
+      <form id="chat-form" class="chat-form" novalidate>
+        <!-- Only before the conversation starts: the CSV files go into its sandbox -->
+        <div id="upload" class="upload">
+          <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-describedby="file-hint">
+            <span class="drop-icon" aria-hidden="true"><i class="bi bi-cloud-arrow-up"></i></span>
+            <span class="drop-text">
+              <span class="drop-title"><b>Upload CSV files</b> or drag them here</span>
+              <span id="file-hint" class="drop-hint"></span>
+            </span>
+          </div>
+          <input id="file-input" type="file" accept=".csv,text/csv" multiple class="visually-hidden">
+          <ul id="file-list" class="file-list"></ul>
+        </div>
+        <div class="composer">
+          <textarea id="question" class="composer-input" rows="2" maxlength="2000" aria-label="Your question"
+                    placeholder="Ask a question about your data…"></textarea>
+          <div class="composer-bar">
+            <span id="char-count" class="char-count">0 / 2000</span>
+            <span class="composer-hint d-none d-xl-inline"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>
+            <span class="ms-auto"></span>
+            <button id="stop-btn" class="btn btn-stop btn-sm" type="button" hidden>
+              <i class="bi bi-stop-fill"></i> Stop
+            </button>
+            <button id="send-btn" class="btn btn-send btn-sm" type="submit">
+              Send <i class="bi bi-arrow-up-short"></i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Markdown for answers and .md files; DOMPurify strips any HTML/script the model or a file sneaks in -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <!-- Syntax highlighting and line diffs for the file viewer -->
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
