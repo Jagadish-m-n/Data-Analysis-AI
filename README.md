@@ -22,8 +22,6 @@ to estimate it.
 - **Two LLM providers**: Groq or Gemini, with an optional fallback model when the main one
   fails.
 - **Privacy and safety**:
-  - ID columns (`customer_id`, `ssn`, `PAN`, `aadhaar_no`, ...) are replaced with pseudonyms at
-    upload.
   - Emails and ID numbers are redacted before the model sees them.
   - "Ignore previous instructions"-style text in the data is stripped out.
 - **Limits**: optional API key, a rate limit per client IP, upload size and count limits, and a
