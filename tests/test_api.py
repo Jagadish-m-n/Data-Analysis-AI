@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agents.llm import build_model
-from app.api import endpoints
+from app.api import services
 from app.api.main import app
 from app.config.settings import settings
 from app.exception.custom_exception import AppError
@@ -115,19 +115,19 @@ def test_analyze_requires_question_and_files(client):
 
 @pytest.mark.parametrize("filename", ["../../sales.csv", r"C:\temp\sales.csv"])
 def test_safe_filename_drops_folders(filename):
-    assert endpoints._safe_filename(filename) == "sales.csv"
+    assert services._safe_filename(filename) == "sales.csv"
 
 
 @pytest.mark.parametrize("filename", ["", ".", "..", "-option.csv", "bad\nname.csv"])
 def test_safe_filename_rejects_unusable_names(filename):
     with pytest.raises(AppError):
-        endpoints._safe_filename(filename)
+        services._safe_filename(filename)
 
 
 def test_personal_id_columns_are_pseudonymized():
     content = b"customer_id,amount\nC9,10\nC7,20\nC9,30\n"
 
-    [(name, result)], pseudonyms = endpoints._pseudonymize_id_columns([("sales.csv", content)])
+    [(name, result)], pseudonyms = services._pseudonymize_id_columns([("sales.csv", content)])
 
     # Equal IDs get equal pseudonyms, other columns are untouched
     assert result == b"customer_id,amount\nANON_000001,10\nANON_000002,20\nANON_000001,30\n"
@@ -138,7 +138,7 @@ def test_personal_id_columns_are_pseudonymized():
 def test_ids_of_things_are_kept():
     content = b"product_id,order_id,units\nWIDGET-A,O1,5\n"
 
-    [(name, result)], pseudonyms = endpoints._pseudonymize_id_columns([("sales.csv", content)])
+    [(name, result)], pseudonyms = services._pseudonymize_id_columns([("sales.csv", content)])
 
     # Returned byte for byte, so answers can name the product
     assert result == content
@@ -150,7 +150,7 @@ def test_ids_of_things_are_kept():
     ["customer_id", "CustomerID", "Employee No", "user_uuid", "pan", "PAN Card No", "aadhaar_no", "customer_pan", "ssn"],
 )
 def test_personal_id_column_names(column):
-    assert endpoints._is_personal_id_column(column)
+    assert services._is_personal_id_column(column)
 
 
 @pytest.mark.parametrize(
@@ -158,30 +158,30 @@ def test_personal_id_column_names(column):
     ["product_id", "order_id", "id", "customer_zip_code", "customer_name", "pan_size", "Passport Country", "Japan"],
 )
 def test_other_column_names(column):
-    assert not endpoints._is_personal_id_column(column)
+    assert not services._is_personal_id_column(column)
 
 
 def test_restore_ids_puts_real_ids_back():
     pseudonyms = {"ANON_000001": "C9", "ANON_000002": "C7"}
 
-    assert endpoints._restore_ids("Top: ANON_000001, then ANON_000002", pseudonyms) == "Top: C9, then C7"
+    assert services._restore_ids("Top: ANON_000001, then ANON_000002", pseudonyms) == "Top: C9, then C7"
     # Unknown pseudonyms and text without any are left alone
-    assert endpoints._restore_ids("ANON_000099 and plain text", pseudonyms) == "ANON_000099 and plain text"
+    assert services._restore_ids("ANON_000099 and plain text", pseudonyms) == "ANON_000099 and plain text"
 
 
 def test_restore_file_only_changes_text_files():
     pseudonyms = {"ANON_000001": "C9"}
 
-    assert endpoints._restore_file("report.md", b"Top customer: ANON_000001", pseudonyms) == b"Top customer: C9"
+    assert services._restore_file("report.md", b"Top customer: ANON_000001", pseudonyms) == b"Top customer: C9"
     # A chart can't be changed after it was drawn
-    assert endpoints._restore_file("chart.png", b"ANON_000001", pseudonyms) == b"ANON_000001"
+    assert services._restore_file("chart.png", b"ANON_000001", pseudonyms) == b"ANON_000001"
 
 
 def test_restore_event_keeps_scripts_unchanged():
     pseudonyms = {"ANON_000001": "C9"}
     event = {"type": "tool_result", "output": "ANON_000001  1200", "args": {"command": "ANON_000001"}}
 
-    restored = endpoints._restore_event(event, pseudonyms)
+    restored = services._restore_event(event, pseudonyms)
 
     assert restored["output"] == "C9  1200"
     assert restored["args"] == {"command": "ANON_000001"}

@@ -20,7 +20,7 @@ Read a skill's SKILL.md with `read_file` (limit=1000) only when the task needs i
 
 # Personal ID numbers in free text, redacted as [REDACTED_ID]. Only formats with hyphens or letters:
 # a bare number (a 12-digit total, a UPI reference) is never hidden. Whole ID columns are
-# pseudonymized at upload instead (_pseudonymize_id_columns in app/api/endpoints.py).
+# pseudonymized at upload instead (_pseudonymize_id_columns in app/api/services.py).
 ID_PATTERN = "|".join([
     r"\b\d{3}-\d{2}-\d{4}\b",  # US SSN: 123-45-6789
     r"\b[2-9]\d{3}-\d{4}-\d{4}\b",  # Aadhaar written with hyphens: 2345-6789-0123

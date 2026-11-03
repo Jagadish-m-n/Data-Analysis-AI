@@ -235,7 +235,7 @@ Errors always have the same JSON shape:
 ```
 app/
   agents/      the agent, the visualizer subagent, prompts, LLM setup and middleware
-  api/         FastAPI app, routes and response models
+  api/         FastAPI app, routes, the business rules behind them (services.py), response models
   config/      settings (environment variables / .env)
   exception/   AppError and the JSON error handlers
   logger/      JSON logging to the console and logs/
