@@ -5,14 +5,16 @@ description: Write /output/report.md summarizing findings with tables and embedd
 
 # Data Reporting
 
-Write `/output/report.md` with `write_file` in one step, using numbers already printed.
-Do not re-run the analysis. Embed only charts that exist in /output/, with relative links.
+Write `/output/report.md` with `write_file` in one step, copying every number exactly as a
+script printed it. Do not re-run the whole analysis: if a number you need was never printed, or
+is no longer in an output you can see, first run one short script that prints it. Embed only
+charts that `ls /output/` shows, with relative links.
 
 ```markdown
 # <Title>
 
 ## Summary
-- <3-5 bullets, each with an exact number: "Electronics drove 42.1% ($1.2M) of revenue">
+- <3-5 bullets, each with an exact printed number: "Electronics drove 42.15% (1,236,543.21) of revenue">
 
 ## Data
 - `<file>`: <rows> rows x <cols> columns, <date range>. Cleaning: <what changed, row counts>.
@@ -34,5 +36,6 @@ Do not re-run the analysis. Embed only charts that exist in /output/, with relat
 - <2-3 follow-ups>
 ```
 
-Rules: lead with the insight, not the method; never invent numbers; tables of at most
-15 rows; round sensibly ($1.24M, 34.5%).
+Rules: lead with the insight, not the method; never invent, estimate or round numbers yourself
+(round in the script, then copy what it printed); never add a currency symbol the data does not
+use; tables of at most 15 rows.

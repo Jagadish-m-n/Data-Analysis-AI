@@ -163,7 +163,7 @@ Every setting is an environment variable, or a line in `.env`. Only the LLM key 
 | `SANDBOX_SNAPSHOT`       | *(empty)*             | Snapshot id, `name:tag` or name to boot sandboxes from       |
 | `SANDBOX_TRANSPORT`      | `websocket`           | `sse` sends commands over plain HTTPS: use it when a proxy blocks WebSockets |
 | `SANDBOX_CREATE_TIMEOUT` | `120`                 | Seconds to wait for a new sandbox                            |
-| `LANGSMITH_TRACING`      | `false`               | Send traces of each agent run to LangSmith. The LangSmith SDK reads it from the process environment, not from `.env`: it works with Docker's `--env-file`, or locally with `uv run --env-file .env main.py`. |
+| `LANGSMITH_TRACING`      | `false`               | Send traces of each agent run to LangSmith. The app copies it, `LANGSMITH_PROJECT` and `LANGSMITH_API_KEY` from `.env` to the process environment, where the LangSmith SDK reads them. |
 | `LANGSMITH_PROJECT`      | `data-analysis-ai`    | LangSmith project for the traces                             |
 
 ### Server and limits
@@ -177,7 +177,7 @@ Every setting is an environment variable, or a line in `.env`. Only the LLM key 
 | `LOG_LEVEL`              | `INFO`               | `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`             |
 | `ENABLE_AI_AGENT`        | `true`               | `false` rejects every analysis with 503                       |
 | `MAX_AGENT_ITERATIONS`   | `40`                 | Model and tool calls before the agent is stopped              |
-| `CONTEXT_MAX_TOKENS`     | `5000`               | Older messages are summarized above this size                 |
+| `CONTEXT_MAX_TOKENS`     | `7000`               | Older messages are summarized above this size                 |
 | `TOOL_OUTPUT_MAX_TOKENS` | `1000`               | Longer script output is saved to a file instead               |
 | `MAX_QUESTION_CHARS`     | `2000`               |                                                               |
 | `MAX_UPLOAD_FILES`       | `10`                 | Files per upload                                              |

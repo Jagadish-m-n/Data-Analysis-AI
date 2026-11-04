@@ -9,6 +9,7 @@ Use it anywhere like this:
     print(settings.groq_model)
 """
 
+import os
 import re
 from pathlib import Path
 from typing import Literal
@@ -65,7 +66,7 @@ class Settings(BaseSettings):
     # --- Limits ---
     enable_ai_agent: bool = True
     max_agent_iterations: int = 40  # model + tool calls before the agent is stopped
-    context_max_tokens: int = 5000  # older messages are summarized above this size
+    context_max_tokens: int = 7000  # older messages are summarized above this size
     tool_output_max_tokens: int = 1000  # longer script output is saved to a file instead
     max_question_chars: int = 2000
     max_upload_files: int = 10
@@ -97,3 +98,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def export_tracing_env(config: Settings) -> None:
+    """Copy the tracing settings to os.environ: the LangSmith SDK reads them only from there, not from .env.
+
+    Variables already in the environment are kept. Run once below, at import, because the SDK
+    caches them the first time it reads them.
+    """
+    if not config.langsmith_tracing:
+        return
+    os.environ.setdefault("LANGSMITH_TRACING", "true")
+    os.environ.setdefault("LANGSMITH_PROJECT", config.langsmith_project)
+    if config.langsmith_api_key:
+        os.environ.setdefault("LANGSMITH_API_KEY", config.langsmith_api_key)
+
+
+export_tracing_env(settings)

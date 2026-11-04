@@ -3,10 +3,13 @@
 Run with:  uv run pytest tests/test_config.py -v
 """
 
+import os
+from unittest.mock import patch
+
 import pytest
 from pydantic import ValidationError
 
-from app.config.settings import Settings, settings
+from app.config.settings import Settings, export_tracing_env, settings
 
 
 def make_settings(**values) -> Settings:
@@ -50,6 +53,38 @@ def test_sandbox_snapshot_accepts_valid_values(snapshot):
 def test_sandbox_snapshot_rejects_invalid_values(snapshot):
     with pytest.raises(ValidationError):
         make_settings(sandbox_snapshot=snapshot)
+
+
+TRACING_VARS = ("LANGSMITH_TRACING", "LANGSMITH_PROJECT", "LANGSMITH_API_KEY")
+
+
+@pytest.fixture
+def clean_env():
+    """The tracing variables removed from os.environ, and everything restored after the test."""
+    with patch.dict(os.environ):
+        for name in TRACING_VARS:
+            os.environ.pop(name, None)
+        yield
+
+
+def test_export_tracing_env_copies_the_settings(clean_env):
+    export_tracing_env(make_settings(langsmith_tracing=True, langsmith_project="proj", langsmith_api_key="key"))
+
+    assert [os.environ[name] for name in TRACING_VARS] == ["true", "proj", "key"]
+
+
+def test_export_tracing_env_keeps_existing_variables(clean_env):
+    os.environ["LANGSMITH_PROJECT"] = "from-env"
+    export_tracing_env(make_settings(langsmith_tracing=True, langsmith_project="proj"))
+
+    assert os.environ["LANGSMITH_PROJECT"] == "from-env"
+    assert "LANGSMITH_API_KEY" not in os.environ  # an empty key is not exported
+
+
+def test_export_tracing_env_does_nothing_when_tracing_is_off(clean_env):
+    export_tracing_env(make_settings(langsmith_tracing=False, langsmith_api_key="key"))
+
+    assert not any(name in os.environ for name in TRACING_VARS)
 
 
 if __name__ == "__main__":

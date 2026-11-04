@@ -23,12 +23,21 @@ g = (df.groupby("category", observed=True)
 g["share_pct"] = (g["total"] / g["total"].sum() * 100).round(1)
 print("=== by category ===\n", g.head(10).round(2).to_string())
 
-# Monthly trend (date must be datetime)
-m = df.groupby(df["date"].dt.to_period("M"))["sales"].sum()
-print("=== monthly (last 12) ===\n", pd.DataFrame({"sales": m, "mom_pct": (m.pct_change() * 100).round(1)}).tail(12).to_string())
+# Monthly trend (date must be datetime): print EVERY month and EVERY metric, then the
+# extreme of each metric via idxmax/idxmin (lowest sales month != lowest profit month)
+monthly_df = (df.groupby(df["date"].dt.to_period("M"))
+                .agg(sales=("sales", "sum"), profit=("profit", "sum")).round(2))
+monthly_df["sales_mom_pct"] = (monthly_df["sales"].pct_change() * 100).round(1)
+print("=== monthly ===\n", monthly_df.to_string())
+for col in ["sales", "profit"]:
+    s = monthly_df[col]
+    print(f"{col}: highest {s.idxmax()} = {s.max()}, lowest {s.idxmin()} = {s.min()}")
 
-# Pivot
-print(df.pivot_table(index="region", columns="year", values="sales", aggfunc="sum", fill_value=0, observed=True).round(0).to_string())
+# Pivot with row AND column totals, plus each column's share of the grand total
+pt = df.pivot_table(index="region", columns="channel", values="sales", aggfunc="sum",
+                    fill_value=0, observed=True, margins=True, margins_name="Total").round(2)
+print("=== region x channel ===\n", pt.to_string())
+print("=== channel share % ===\n", (pt.loc["Total"] / pt.loc["Total", "Total"] * 100).round(2).to_string())
 
 # Strong correlations, each pair once
 c = df.select_dtypes("number").corr()

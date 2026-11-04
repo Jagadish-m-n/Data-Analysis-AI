@@ -4,7 +4,7 @@ Each analysis (or conversation in the web UI) gets its own sandbox, used in 5 st
 
     backend = await create_sandbox()                # 1. start a fresh sandbox
     await upload_skills(backend)                    # 2. copy app/skills/  ->  /skills/
-    await upload_data_files(backend, files)         # 3. copy the CSV files ->  /data/
+    await upload_data_files(backend, files)         # 3. copy the CSV files ->  /data/, create /output/
     ...                                             # 4. the agent works, saving files in /output/
     files = await download_output_files(backend)    # 5a. fetch the charts and reports
     await delete_sandbox(backend)                   # 5b. always delete the sandbox at the end
@@ -111,9 +111,13 @@ async def upload_skills(backend: LangSmithSandbox) -> None:
 
 
 async def upload_data_files(backend: LangSmithSandbox, files: list[tuple[str, bytes]]) -> list[str]:
-    """Copy (filename, content) pairs to /data/. Returns the paths inside the sandbox."""
+    """Copy (filename, content) pairs to /data/ and create /output/. Returns the paths inside the sandbox."""
     sandbox_files = [(SANDBOX_DATA_PATH + name, content) for name, content in files]
     await _upload(backend, sandbox_files)
+    # The image has no /output/, and pandas' to_csv and matplotlib's savefig do not create folders
+    result = await backend.aexecute(f"mkdir -p {SANDBOX_OUTPUT_PATH}")
+    if result.exit_code != 0:
+        raise RuntimeError(f"Could not create {SANDBOX_OUTPUT_PATH}: {result.output}")
     return [path for path, _ in sandbox_files]
 
 

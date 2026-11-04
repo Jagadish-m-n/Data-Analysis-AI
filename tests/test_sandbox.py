@@ -16,10 +16,12 @@ class FakeBackend:
 
     id = "fake-sandbox"
 
-    def __init__(self, entries=(), downloads=(), output=""):
+    def __init__(self, entries=(), downloads=(), output="", exit_code=0):
         self.entries = list(entries)
         self.downloads = list(downloads)
         self.output = output
+        self.exit_code = exit_code
+        self.commands = []
 
     async def als(self, path):
         return SimpleNamespace(error=None, entries=self.entries)
@@ -28,7 +30,8 @@ class FakeBackend:
         return [download for download in self.downloads if download.path in paths]
 
     async def aexecute(self, command):
-        return SimpleNamespace(output=self.output, exit_code=0)
+        self.commands.append(command)
+        return SimpleNamespace(output=self.output, exit_code=self.exit_code)
 
 
 @pytest.fixture
@@ -63,6 +66,20 @@ def test_upload_data_files_uses_data_folder(uploaded):
 
     assert paths == ["/data/sales.csv"]
     assert uploaded == [("/data/sales.csv", b"a,b\n1,2\n")]
+
+
+def test_upload_data_files_creates_output_folder(uploaded):
+    backend = FakeBackend()
+    asyncio.run(sandbox.upload_data_files(backend, [("sales.csv", b"a,b\n1,2\n")]))
+
+    assert backend.commands == ["mkdir -p /output/"]
+
+
+def test_upload_data_files_fails_if_output_folder_cannot_be_created(uploaded):
+    backend = FakeBackend(output="mkdir: Permission denied", exit_code=1)
+
+    with pytest.raises(RuntimeError, match="/output/"):
+        asyncio.run(sandbox.upload_data_files(backend, [("sales.csv", b"a,b\n1,2\n")]))
 
 
 def test_upload_skills_uses_skills_folder(uploaded):
